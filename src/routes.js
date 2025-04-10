@@ -7,9 +7,10 @@ const routes = express.Router();
 
 
 routes.get('/',raizControllers.raiz);
-routes.get('/user', authorization , userControllers.searchUsersAll);
+routes.get('/user', userControllers.searchUsersAll);
 routes.post('/user',userControllers.create);
 routes.post('/userauth', userControllers.searcherUser);
+routes.put('/user/:codcli', userControllers.updateClient);
 
 
 module.exports = routes;

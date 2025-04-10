@@ -73,5 +73,26 @@ module.exports={
         } catch(error){
 
         }
+    },
+
+    async updateClient(req, res){
+        try{
+            const { codcli } = req.params;
+            const { nome } = req.body;
+            const { email } = req.body;
+            const { uf } = req.body;
+            const { level } = req.body;
+            const password = await bcrypt.hash(req.body.password, 10)
+
+            const result = await knex ('Cliente').where( { codcli });
+            if(result.length === 1){
+                await knex('clientes').update({ nome, email, uf, level, password}).where({ codcli });
+                return res.status(201).send();
+            }else{
+                return res.status(400).send({ error:'Código do cliente inválido !!!'});
+            }
+        }catch(error){
+            return res.status(400).json({error: error.message});
+        };
     }
 }
