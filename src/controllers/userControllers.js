@@ -1,7 +1,34 @@
 const knex = require('./../database');
 const bcrypt = require('bcrypt');
 const jwt =require('jsonwebtoken');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
+async function sendResetEmail(email, token) {
+    // Configure o transporter com seu serviço de e-mail real!
+    let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: 'seuemail@gmail.com',
+            pass: 'suasenha'
+        }
+    });
+
+    const resetLink = `https://backend-4t57.onrender.com/reset-password?token=${token}`;
+    await transporter.sendMail({
+        from: 'Sua App <seuemail@gmail.com>',
+        to: email,
+        subject: 'Recuperação de senha',
+        text: `Clique no link para redefinir sua senha: ${resetLink}`,
+        html: `
+            <h1>Recuperação de Senha</h1>
+            <p>Clique no link abaixo para redefinir sua senha:</p>
+            <a href="${resetLink}">Redefinir Senha</a>
+            <p>Se você não solicitou esta recuperação de senha, ignore este e-mail.</p>
+            <p>Este link expira em 1 hora.</p>
+        `
+    });
+}
 
 module.exports={
     async create(req, res){
@@ -105,10 +132,87 @@ module.exports={
         }
     },
 
+    async updatePassword(req, res) {
+        try {
+            const { codcli } = req.params;
+            const { currentPassword, newPassword } = req.body;
+
+            // Busca o cliente
+            const [user] = await knex('clientes').where({ codcli });
+            if (!user) {
+                return res.status(404).send({ error: 'Cliente não encontrado' });
+            }
+
+            // Verifica a senha atual
+            const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!passwordMatch) {
+                return res.status(401).send({ error: 'Senha atual incorreta' });
+            }
+
+            // Atualiza para a nova senha
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await knex('clientes').update({ password: hashedPassword }).where({ codcli });
+
+            return res.status(200).send({ message: 'Senha atualizada com sucesso' });
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    },
+
+    async forgotPassword(req, res) {
+        try {
+            const { email } = req.body;
+            const [user] = await knex('clientes').where({ email });
+            if (!user) {
+                return res.status(404).send({ error: 'E-mail não encontrado' });
+            }
+
+            // Gera token
+            const token = crypto.randomBytes(20).toString('hex');
+            const expires = new Date(Date.now() + 3600000); // 1 hora
+
+            // Salva o token e expiração no banco
+            await knex('clientes').update({ reset_token: token, reset_token_expires: expires }).where({ email });
+
+            // Envia e-mail
+            await sendResetEmail(email, token);
+
+            return res.status(200).send({ message: 'E-mail de recuperação enviado' });
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    },
+
+    async resetPassword(req, res) {
+        try {
+            const { token, newPassword } = req.body;
+            const now = new Date();
+
+            // Busca usuário pelo token e verifica validade
+            const [user] = await knex('clientes')
+                .where({ reset_token: token })
+                .andWhere('reset_token_expires', '>', now);
+
+            if (!user) {
+                return res.status(400).send({ error: 'Token inválido ou expirado' });
+            }
+
+            // Atualiza senha e remove o token
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            await knex('clientes')
+                .update({ password: hashedPassword, reset_token: null, reset_token_expires: null })
+                .where({ codcli: user.codcli });
+
+            return res.status(200).send({ message: 'Senha redefinida com sucesso' });
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    },
+
     async deleteClient(req, res) {
         try {
             const { codcli } = req.params;
-            console.log('Tentando deletar cliente com código:', codcli);
+            console.log('Tentando deletar cliente com código:', codcli, 'Tipo:', typeof codcli);
             
             // Verifica se o cliente existe
             const result = await knex('clientes').where({ codcli });
@@ -120,12 +224,17 @@ module.exports={
             }
 
             // Deleta o cliente
-            await knex('clientes').where({ codcli }).del();
-            console.log('Cliente deletado com sucesso');
+            const delResult = await knex('clientes').where({ codcli }).del();
+            console.log('Resultado do delete:', delResult);
+
+            if (delResult === 0) {
+                return res.status(400).send({ error: 'Não foi possível deletar o cliente' });
+            }
+
             return res.status(200).send({ message: 'Cliente deletado com sucesso' });
         } catch (error) {
             console.error('Erro ao deletar cliente:', error);
-            return res.status(400).json({ error: error.message });
+          return res.status(400).json({ error: error.message });
         }
     }
 }

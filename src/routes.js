@@ -12,6 +12,9 @@ routes.post('/user',userControllers.create);
 routes.post('/userauth', userControllers.searcherUser);
 routes.put('/user/:codcli', userControllers.updateClient);
 routes.delete('/user/:codcli', userControllers.deleteClient);
+routes.put('/user/:codcli/password', userControllers.updatePassword);
+routes.post('/forgot-password', userControllers.forgotPassword);
+routes.post('/reset-password', userControllers.resetPassword);
 
 
 module.exports = routes;
