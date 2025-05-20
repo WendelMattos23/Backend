@@ -56,10 +56,12 @@ module.exports={
                             idUser:result.id,
                             nome:result.nome,
                             email:result.email,
-                            level:result.level
+                            level:result.level,
+                            codcli: result.codcli
                         },'segredo',{expiresIn: '1h'});
                         return res.status(200).send({
                             token:token,
+                            codcli: result.codcli,
                             mensagem:'Autenticação - realizada com sucesso !!!'
                         });
                     }
