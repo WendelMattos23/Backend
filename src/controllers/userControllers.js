@@ -19,14 +19,7 @@ async function sendResetEmail(email, token) {
         from: 'Sua App <seuemail@gmail.com>',
         to: email,
         subject: 'Recuperação de senha',
-        text: `Clique no link para redefinir sua senha: ${resetLink}`,
-        html: `
-            <h1>Recuperação de Senha</h1>
-            <p>Clique no link abaixo para redefinir sua senha:</p>
-            <a href="${resetLink}">Redefinir Senha</a>
-            <p>Se você não solicitou esta recuperação de senha, ignore este e-mail.</p>
-            <p>Este link expira em 1 hora.</p>
-        `
+        text: `Olá! Você solicitou a recuperação de senha. Clique no link abaixo para redefinir sua senha:\n\n${resetLink}\n\nEste link expira em 1 hora.\n\nSe você não solicitou esta recuperação, ignore este e-mail.`
     });
 }
 
