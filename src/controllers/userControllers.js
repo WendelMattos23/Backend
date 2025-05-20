@@ -5,22 +5,31 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
 async function sendResetEmail(email, token) {
-    // Configure o transporter com seu serviço de e-mail real!
+    // Cria uma conta de teste no Ethereal
+    let testAccount = await nodemailer.createTestAccount();
+
+    // Configura o transporter com a conta de teste
     let transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
         auth: {
-            user: 'seuemail@gmail.com',
-            pass: 'suasenha'
-        }
+            user: testAccount.user,
+            pass: testAccount.pass,
+        },
     });
 
-    const resetLink = `https://backend-4t57.onrender.com/reset-password?token=${token}`;
-    await transporter.sendMail({
-        from: 'Sua App <seuemail@gmail.com>',
+    const resetLink = `https://backend-4t57.onrender.com/reset-password?token=${token}&email=${email}`;
+    
+    // Envia o email
+    let info = await transporter.sendMail({
+        from: '"Sua App" <noreply@suacompany.com>',
         to: email,
         subject: 'Recuperação de senha',
         text: `Olá! Você solicitou a recuperação de senha. Redefina sua senha aqui:\n\n${resetLink}\n\nEste link expira em 1 hora.\n\nSe você não solicitou esta recuperação, ignore este e-mail.`
     });
+
+    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 }
 
 module.exports={
