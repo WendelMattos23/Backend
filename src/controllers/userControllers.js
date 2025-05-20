@@ -5,31 +5,9 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
 async function sendResetEmail(email, token) {
-    // Cria uma conta de teste no Ethereal
-    let testAccount = await nodemailer.createTestAccount();
-
-    // Configura o transporter com a conta de teste
-    let transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-        },
-    });
-
-    const resetLink = `https://backend-4t57.onrender.com/reset-password?token=${token}&email=${email}`;
-    
-    // Envia o email
-    let info = await transporter.sendMail({
-        from: '"Sua App" <noreply@suacompany.com>',
-        to: email,
-        subject: 'Recuperação de senha',
-        text: `Olá! Você solicitou a recuperação de senha. Redefina sua senha aqui:\n\n${resetLink}\n\nEste link expira em 1 hora.\n\nSe você não solicitou esta recuperação, ignore este e-mail.`
-    });
-
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    // Apenas retorna o token para desenvolvimento
+    console.log('Token gerado:', token);
+    return token;
 }
 
 module.exports={
@@ -174,12 +152,19 @@ module.exports={
             const expires = new Date(Date.now() + 3600000); // 1 hora
 
             // Salva o token e expiração no banco
-            await knex('clientes').update({ reset_token: token, reset_token_expires: expires }).where({ email });
+            await knex('clientes')
+                .update({ 
+                    reset_token: token, 
+                    reset_token_expires: expires 
+                })
+                .where({ email });
 
-            // Envia e-mail
-            await sendResetEmail(email, token);
-
-            return res.status(200).send({ message: 'E-mail de recuperação enviado' });
+            // Retorna o token para o frontend
+            return res.status(200).send({ 
+                message: 'Token gerado com sucesso',
+                token: token,
+                expires: expires
+            });
         } catch (error) {
             return res.status(400).json({ error: error.message });
         }
@@ -202,7 +187,11 @@ module.exports={
             // Atualiza senha e remove o token
             const hashedPassword = await bcrypt.hash(newPassword, 10);
             await knex('clientes')
-                .update({ password: hashedPassword, reset_token: null, reset_token_expires: null })
+                .update({ 
+                    password: hashedPassword, 
+                    reset_token: null, 
+                    reset_token_expires: null 
+                })
                 .where({ codcli: user.codcli });
 
             return res.status(200).send({ message: 'Senha redefinida com sucesso' });
