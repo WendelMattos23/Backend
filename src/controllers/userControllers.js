@@ -286,7 +286,7 @@ module.exports={
         } catch (error) {
             console.error('Erro ao atualizar foto de perfil:', error);
             return res.status(500).json({ 
-                error: 'Erro ao atualizar foto de perfil.',
+                error: 'Erro ao atualizar foto de perfil',
                 details: error.message 
             });
         }
