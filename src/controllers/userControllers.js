@@ -3,6 +3,14 @@ const bcrypt = require('bcrypt');
 const jwt =require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const cloudinary = require('cloudinary').v2;
+
+// Configuração do Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 async function sendResetEmail(email, token) {
     // Apenas retorna o token para desenvolvimento
@@ -239,6 +247,48 @@ module.exports={
         } catch (error) {
             console.error('Erro ao deletar cliente:', error);
           return res.status(400).json({ error: error.message });
+        }
+        
+    },
+
+    async atualizarFotoPerfil(req, res) {
+        try {
+            const { codcli } = req.params;
+            const { fotoPerfil } = req.body;
+
+            if (!fotoPerfil) {
+                return res.status(400).json({ error: 'URL da foto é obrigatória.' });
+            }
+
+            // Verifica se o usuário existe
+            const [user] = await knex('clientes').where({ codcli });
+            if (!user) {
+                return res.status(404).json({ error: 'Usuário não encontrado.' });
+            }
+
+            // Se já existe uma foto antiga, deleta do Cloudinary
+            if (user.foto_perfil) {
+                const publicId = user.foto_perfil.split('/').pop().split('.')[0];
+                await cloudinary.uploader.destroy(publicId);
+            }
+
+            // Atualiza a foto no banco de dados
+            await knex('clientes')
+                .where({ codcli })
+                .update({ foto_perfil: fotoPerfil });
+
+            return res.status(200).json({ 
+                success: true, 
+                message: 'Foto de perfil atualizada com sucesso',
+                fotoPerfil 
+            });
+
+        } catch (error) {
+            console.error('Erro ao atualizar foto de perfil:', error);
+            return res.status(500).json({ 
+                error: 'Erro ao atualizar foto de perfil.',
+                details: error.message 
+            });
         }
     }
 }
