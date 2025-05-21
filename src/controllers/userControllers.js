@@ -50,13 +50,24 @@ module.exports={
                 return res.status(401).send({mensagem:'Erro de requisição - requisição sem email ou senha'});
             }
 
-            const [result] = await knex('clientes').where({email});
-            console.log('Usuário encontrado:', result); // Log para debug
+            // Log do email recebido
+            console.log('Tentando login com email:', email);
 
-            if(result != undefined) {
+            // Busca todos os usuários para debug
+            const allUsers = await knex('clientes').select('*');
+            console.log('Todos os usuários no banco:', allUsers);
+
+            // Busca o usuário específico
+            const [result] = await knex('clientes')
+                .where('email', '=', email)
+                .select('*');
+            
+            console.log('Usuário encontrado:', result);
+
+            if(result) {
                 // Convertendo para Promise para melhor tratamento de erros
                 const passwordMatch = await bcrypt.compare(password, result.password);
-                console.log('Senha corresponde:', passwordMatch); // Log para debug
+                console.log('Senha corresponde:', passwordMatch);
 
                 if(passwordMatch) {
                     const token = jwt.sign({
