@@ -251,44 +251,33 @@ module.exports={
         
     },
 
-    async atualizarFotoPerfil(req, res) {
+    async uploadProfileImage(req, res) {
         try {
             const { codcli } = req.params;
-            const { fotoPerfil } = req.body;
+            const { image } = req.body;
 
-            if (!fotoPerfil) {
-                return res.status(400).json({ error: 'URL da foto é obrigatória.' });
+            if (!image) {
+                return res.status(400).send({ error: 'Nenhuma imagem fornecida' });
             }
 
-            // Verifica se o usuário existe
-            const [user] = await knex('clientes').where({ codcli });
-            if (!user) {
-                return res.status(404).json({ error: 'Usuário não encontrado.' });
-            }
+            // Upload da imagem para o Cloudinary
+            const result = await cloudinary.uploader.upload(image, {
+                folder: 'profile_images',
+                resource_type: 'auto'
+            });
 
-            // Se já existe uma foto antiga, deleta do Cloudinary
-            if (user.foto_perfil) {
-                const publicId = user.foto_perfil.split('/').pop().split('.')[0];
-                await cloudinary.uploader.destroy(publicId);
-            }
-
-            // Atualiza a foto no banco de dados
+            // Atualiza o URL da imagem no banco de dados
             await knex('clientes')
-                .where({ codcli })
-                .update({ foto_perfil: fotoPerfil });
+                .update({ profile_image_url: result.secure_url })
+                .where({ codcli });
 
-            return res.status(200).json({ 
-                success: true, 
-                message: 'Foto de perfil atualizada com sucesso',
-                fotoPerfil 
+            return res.status(200).send({
+                message: 'Imagem de perfil atualizada com sucesso',
+                imageUrl: result.secure_url
             });
-
         } catch (error) {
-            console.error('Erro ao atualizar foto de perfil:', error);
-            return res.status(500).json({ 
-                error: 'Erro ao atualizar foto de perfil',
-                details: error.message 
-            });
+            console.error('Erro ao fazer upload da imagem:', error);
+            return res.status(400).json({ error: error.message });
         }
-    }
+    },
 }

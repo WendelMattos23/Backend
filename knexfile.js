@@ -9,6 +9,9 @@ const config = {
             user: process.env.PG_USER,
             password: process.env.PG_PASSWORD,
             ssl: true,
+        },
+        migrations: {
+            directory: './src/database/migrations'
         }
     }
 }   

@@ -15,6 +15,7 @@ routes.delete('/user/:codcli', userControllers.deleteClient);
 routes.put('/user/:codcli/password', userControllers.updatePassword);
 routes.post('/forgot-password', userControllers.forgotPassword);
 routes.post('/reset-password', userControllers.resetPassword);
+routes.post('/user/:codcli/profile-image', userControllers.uploadProfileImage);
 
 
 module.exports = routes;
