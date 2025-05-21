@@ -57,9 +57,9 @@ module.exports={
             const allUsers = await knex('clientes').select('*');
             console.log('Todos os usuários no banco:', allUsers);
 
-            // Busca o usuário específico
+            // Busca o usuário específico ignorando maiúsculas/minúsculas
             const [result] = await knex('clientes')
-                .where('email', '=', email)
+                .whereRaw('LOWER(email) = ?', [email.toLowerCase()])
                 .select('*');
             
             console.log('Usuário encontrado:', result);
